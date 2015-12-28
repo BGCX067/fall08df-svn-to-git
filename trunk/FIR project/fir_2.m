@@ -1,0 +1,299 @@
+% Digital Filtering Project - FIR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% A heterodyne communication system is designed that oversample samples the
+% IF signal at a rate of fs Sa/s.  You are designing a baseband
+% communication filter (FIR) that is used to recover a signal whose
+% bandwidth is 0.15fs.  Specifically you are to design a set of 31st order
+% lowpass linear phase FIRs that has a normalized passband frequency edge
+% at wp=0.3pi, stopband beginning at ws=0.4pi, and an arbitrary transition
+% band (don’t care).  The design specifications are graphically interpreted
+% below on a normalize frequency axis.  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PART 1: Window Method 
+% (a)	Windowed FIR designs are supported with
+% MATLAB’s fir1 and fir2 functions (remember to correct for MATLAB FIR
+% order specification).  Produce a 31st order FIR using the window method.
+% Chose the most appropriate fir1 or fir2 operator to synthesize an FIR
+% with a uniform window that meets specifications.  Graphically display the
+% impulse response, magnitude frequency, group delay, and the zero
+% locations of your FIR. 
+%
+% (b)	Repeat Part (a) using a Hamming window. % Explain any major differences. 
+%
+% (c)	Assume that the input is unit bound. Repeat part (a) using an 8-bit 
+% fixed-coefficient overflow free version of your filter.  
+% Explain any major differences.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+clear; clc; close all
+
+
+filter_order_matlab = 30; %30th order filter for 'rest' of the world
+N = filter_order_matlab;
+N_fft = 512;
+w = [0:2/N_fft: 1 - 1/N_fft];
+wp = 0.3;
+ws = 0.4;
+
+Hd = w<wp;
+mask_pb = w<wp;
+mask_sb = w>ws;
+mask = mask_pb | mask_sb;
+
+F = [0 wp ws 1];
+A = [1 1 0 0];
+
+h_uni = firls(N, F, A);
+h_ham = firls(N, F, A).* hamming(N+1)'; 
+
+
+
+
+
+
+H_uni = fft(h_uni, N_fft);
+H_ham = fft(h_ham, N_fft);
+
+H_uni = H_uni(1:N_fft/2);
+H_ham = H_ham(1:N_fft/2);
+
+H_uni_ang = angle(H_uni);
+H_ham_ang = angle(H_ham);
+
+% g_delay_uni = diff(H_uni_ang);
+% g_delay_ham = diff(H_ham_ang);
+
+g_delay_uni = grpdelay(h_uni, 1 , N_fft/2);
+g_delay_ham = grpdelay(h_ham, 1 , N_fft/2);
+
+%%%%%%%%%%%%%%%%%
+%   UNIFORM     %
+%%%%%%%%%%%%%%%%%
+
+subplot(2,2,1);
+stem(h_uni);
+title('Impulse response');
+
+subplot(2,2,2);
+semilogy(w, abs(H_uni))
+title('Magnitude response');
+
+subplot(2,2,3);
+plot(w, H_uni_ang)
+title('Phase response');
+
+subplot(2,2,4);
+plot(w, g_delay_uni);
+title('Group Delay')
+ylim([0 20])
+
+% figure
+% subplot(2,3,3)
+% zplane(h_uni, 1)
+% title('Pole zero plot ');
+
+% subplot(2,3,6)
+% axis off
+% text(0,0,'Windowed FIR filter using uniform window');
+
+
+%%%%%%%%%%%%%%%%%%%%%
+%      HAMMING      %
+%%%%%%%%%%%%%%%%%%%%%
+
+
+% figure
+subplot(2,2,1);
+hold on
+stem(h_ham, '-r+');
+legend('uniform','hamming');
+% title('Impulse response of the filter with Hamming window');
+
+subplot(2,2,2);
+hold on
+semilogy(w, abs(H_ham), '-r+', 'markersize',4)
+legend('uniform','hamming');
+% title('Magnitude response [Hamming]');
+
+subplot(2,2,3);
+hold on
+plot(w, H_ham_ang, '-r+', 'markersize',4)
+legend('uniform','hamming');
+% title('Phase response [Hamming]');
+
+subplot(2,2,4);
+hold on
+plot(w, g_delay_ham,'-r+', 'markersize',4);
+legend('uniform','hamming');
+% title('Group Delay [Hamming]')
+ylim([0 20])
+
+% subplot(2,3,3);
+% hold on
+% zplane(h_ham, 1);
+% title('Pole zero plot[Hamming]');
+
+% subplot(2,3,6)
+% axis off
+% text(0,0,'Windowed FIR filter using Hamming window');
+
+%%%%%%%%%%%%%%%%%%%
+%    Compare      %
+%%%%%%%%%%%%%%%%%%%
+
+% figure
+% subplot(2,2,1)
+% semilogy(w, abs(H_uni) );
+% hold on;
+% semilogy(w, abs(H_ham),'-r+','markersize',4);
+% title('Comparision of filter with Hamming and Uniform window');
+% legend('Uniform','Hamming');
+% 
+% subplot(2,2,3)
+% zplane(h_uni, 1)
+% title('Pole zero plot of the filter [uniform]');
+% 
+% subplot(2,2,4)
+% zplane(h_ham, 1)
+% title('Pole zero plot of the filter[Hamming]');
+% 
+% subplot(2,2,2)
+% axis off
+% text(0,0,'Comaprision between Uniform and Hamming windowed filters');
+% 
+
+%%%%%%%%%%%%%%%%%%%%
+% Finite precision %
+%%%%%%%%%%%%%%%%%%%%
+
+figure 
+subplot(2,2,1);
+% stem(h_uni);
+% title('Impulse response');
+
+subplot(2,2,2);
+semilogy(w, abs(H_uni))
+title('Magnitude response');
+
+subplot(2,2,3);
+plot(w, H_uni_ang)
+title('Phase response');
+
+subplot(2,2,4);
+plot(w, g_delay_uni);
+title('Group Delay')
+ylim([0 20])
+
+
+h_uni_8 = round(h_uni*2^8)/2^8;
+
+H_uni_8 = fft(h_uni_8, N_fft);
+H_uni_8 = H_uni_8(1:N_fft/2);
+
+H_uni_ang_8 = (angle(H_uni_8));
+g_delay_uni_8 = grpdelay(h_uni_8, 1 , N_fft/2);
+
+% figure
+subplot(2,2,1);
+hold on
+stem(h_uni_8 - h_uni);
+% legend('truth','finite');
+title('Difference from the original Impulse response');
+
+subplot(2,2,2);
+hold on
+semilogy(w, abs(H_uni_8), '-r+', 'markersize',2)
+legend('truth','finite');
+% title('Magnitude response [Hamming]');
+
+subplot(2,2,3);
+hold on
+plot(w, H_uni_ang_8, '-r+', 'markersize',4)
+legend('truth','finite');
+% title('Phase response [Hamming]');
+
+subplot(2,2,4);
+hold on
+plot(w, g_delay_uni_8,'-r+', 'markersize',4);
+legend('truth','finite');
+
+
+%%%%%%%%%%%%%%%%%
+%   Compare     %
+%%%%%%%%%%%%%%%%%
+% 
+% figure
+% subplot(2,2,1)
+% semilogy(w, abs(H_uni));
+% hold on;
+% semilogy(w, abs(H_uni_8), '-r+', 'markersize',4 );
+% title('Comparision of filter with Hamming and Uniform window');
+% legend('truth','finite precision');
+% 
+% subplot(2,2,2)
+% stem(h_uni_8 - h_uni)
+% title('Error in impulse response due to finite precision')
+% % Error_due_to_finite_precision = sum(abs(h_uni - h_uni_8).^2)
+% 
+% subplot(2,2,3)
+% zplane(h_uni, 1)
+% title('Pole zero plot of the filter [uniform]');
+% 
+% subplot(2,2,4)
+% zplane(h_uni_8, 1)
+% title('Pole zero plot of the filter[finite]');
+
+
+%%%%%%%%%%%%%%%%%%%
+% Pole-zero plots %
+%%%%%%%%%%%%%%%%%%%
+figure
+subplot(2,2,1)
+zplane(h_uni, 1)
+title('uniform windowed')
+
+subplot(2,2,2)
+zplane(h_ham, 1)
+title('hamming windowed')
+
+subplot(2,2,3)
+zplane(h_uni_8, 1)
+title('finite precision')
+
+
+
+%%%%%%%%%%%%%%%%%%
+%   Metrics      %
+%%%%%%%%%%%%%%%%%%
+
+
+
+
+err = mask.*(abs(Hd) - abs(H_uni));
+
+I1 = sum(abs(err))./length(err)
+
+I2 = sum(abs(err).^2)./length(err)
+
+I_inf = max(abs(err))
+
+Maximum_passband_gain_lin = max(abs(H_uni(1:length(mask_pb))))
+Maximum_passband_gain_dB = 10*log10(Maximum_passband_gain_lin)
+
+Minimum_passband_gain_lin = min(abs(H_uni(1:length(mask_pb))))
+Minimum_passband_gain_dB = 10*log10(Minimum_passband_gain_lin)
+
+Group_delay_predicted = 15
+Group_delay_measured = 15
+
+
+Uniform_window_filter_worst_case_gain = sum(abs(h_uni))
+
+Ratio_of_max_min_coeff = max(abs(h_uni))/min(abs(h_uni))
+
+
+
+
+
+

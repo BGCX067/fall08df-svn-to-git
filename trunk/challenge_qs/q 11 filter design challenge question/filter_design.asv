@@ -1,0 +1,21 @@
+clear;clc;close all
+N=51;
+w = [-1:2/N:0.998]*pi;
+
+H_abs = -0.4*pi<w & w<0.4*pi;
+H_ang = exp(-(N-1)/2*j*w);
+H = H_abs.*H_ang;
+
+h = ifft(H);
+subplot(2,2,1)
+h_trunc = h(N/2 - 2: N/2 + 2)
+stem(real(h_trunc))
+
+subplot(2,2,2)
+semilogy(w, abs(fft(real(h_trunc), length(w))));
+hold on
+semilogy(w, H_abs, 'r-');
+
+subplot(2,2,4)
+plot(w, angle(fft(real(h_trunc), length(w))));
+plot(w, angle(fft(real(h_trunc), length(w))));
